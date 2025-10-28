@@ -1,0 +1,3 @@
+/home/rohit/programming/head_model/head_model_code/build/CMakeFiles/primary_fluence.dir
+/home/rohit/programming/head_model/head_model_code/build/CMakeFiles/edit_cache.dir
+/home/rohit/programming/head_model/head_model_code/build/CMakeFiles/rebuild_cache.dir
