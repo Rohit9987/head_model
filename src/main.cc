@@ -12,6 +12,7 @@
 #include "headmodel/source/GaussianSourceSampler2D.h"
 #include "headmodel/fluence/FiniteSourceFluence.h"
 #include "headmodel/fluence/DualSourceFluenceModel.h"
+#include "headmodel/fluence/ExtraFocalFluence.h"
 
 int main(int argc, char** argv)
 {
