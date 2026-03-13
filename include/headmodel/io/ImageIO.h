@@ -112,5 +112,71 @@ inline void writeProfileCSV(
     }
 }
 
+
+inline void writeCSV_XY_Multi(
+    const std::string& filePath,
+    const headmodel::grid::Grid2D<float>& primary,
+    const headmodel::grid::Grid2D<float>& extra,
+    const headmodel::grid::Grid2D<float>& total
+) {
+    if (primary.nx() != extra.nx() || primary.nx() != total.nx() ||
+        primary.ny() != extra.ny() || primary.ny() != total.ny()) {
+        throw std::runtime_error("writeCSV_XY_Multi: grid size mismatch");
+    }
+
+    std::ofstream out(filePath);
+    if (!out) throw std::runtime_error("writeCSV_XY_Multi: cannot open " + filePath);
+
+    out << "x_mm,y_mm,primary,extra,total,extra_fraction\n";
+    out << std::fixed << std::setprecision(6);
+
+    for (int j = 0; j < primary.ny(); ++j) {
+        const double y = primary.yCenter(j);
+        for (int i = 0; i < primary.nx(); ++i) {
+            const double x = primary.xCenter(i);
+
+            const float p = primary(i,j);
+            const float e = extra(i,j);
+            const float t = total(i,j);
+            const float frac = (t > 1e-8f) ? (e / t) : 0.0f;
+
+            out << x << "," << y << ","
+                << p << "," << e << "," << t << "," << frac << "\n";
+        }
+    }
+}
+
+
+inline void writeProfileCSV_Multi(
+    const std::string& filePath,
+    const headmodel::grid::Grid2D<float>& primary,
+    const headmodel::grid::Grid2D<float>& extra,
+    const headmodel::grid::Grid2D<float>& total,
+    double y0_mm
+) {
+    int bestJ = 0;
+    double bestD = std::numeric_limits<double>::infinity();
+    for (int j = 0; j < primary.ny(); ++j) {
+        const double d = std::abs(primary.yCenter(j) - y0_mm);
+        if (d < bestD) { bestD = d; bestJ = j; }
+    }
+
+    std::ofstream out(filePath);
+    if (!out) throw std::runtime_error("writeProfileCSV_Multi: cannot open " + filePath);
+
+    out << "x_mm,primary,extra,total,extra_fraction\n";
+    out << std::fixed << std::setprecision(6);
+
+    for (int i = 0; i < primary.nx(); ++i) {
+        const float p = primary(i,bestJ);
+        const float e = extra(i,bestJ);
+        const float t = total(i,bestJ);
+        const float frac = (t > 1e-8f) ? (e / t) : 0.0f;
+
+        out << primary.xCenter(i) << ","
+            << p << "," << e << "," << t << "," << frac << "\n";
+    }
+}
+
 } // namespace headmodel::io
 

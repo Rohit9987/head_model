@@ -74,8 +74,14 @@ int main(int argc, char** argv)
         // ----------------------------
         // Allocate grid and compute
         // ----------------------------
-		headmodel::grid::Grid2D<float> fluence(nx, ny, dx_mm, dy_mm, x0_mm, y0_mm);
-		fluence.fill(0.0f);
+		headmodel::grid::Grid2D<float> fluenceTotal(nx, ny, dx_mm, dy_mm, x0_mm, y0_mm);
+		headmodel::grid::Grid2D<float> fluenceExtra(nx, ny, dx_mm, dy_mm, x0_mm, y0_mm);
+		headmodel::grid::Grid2D<float> fluencePrimary(nx, ny, dx_mm, dy_mm, x0_mm, y0_mm);
+
+		fluencePrimary.fill(0.0f);
+		fluenceExtra.fill(0.0f);
+		fluenceTotal.fill(0.0f);
+
 
 		//headmodel::fluence::IdealPrimaryFluence model;
 		auto sampler = std::make_shared<headmodel::source::GaussianSourceSampler2D>(/*sigma_mm=*/0.3);
@@ -85,7 +91,7 @@ int main(int argc, char** argv)
 		s.rngSeed = 12345;
 
 		headmodel::collimation::JawTransmissionModel::Params p;
-		p.T_leak = 0.015; //	1.5 %
+		p.T_leak = 0.003; //	leakage through jaw%
 		p.k_mm = 1.0;
 		headmodel::collimation::JawTransmissionModel tx(p);
 
@@ -109,21 +115,23 @@ int main(int argc, char** argv)
 
 			ctx.jawsAtJawPlane = {-halfJaw, +halfJaw, -halfJaw, +halfJaw};
 
-			fluence.fill(0.0f);
-			dualModel.compute(ctx, fluence);
+			fluenceTotal.fill(0.0f);
+			fluenceExtra.fill(0.0f);
+			fluencePrimary.fill(0.0f);
 
-			headmodel::io::writePGM_U8(tag, fluence, false, 0.0f, 1.0f);
-			headmodel::io::writeProfileCSV(tag + "_profile_y0.csv", fluence, 0.0);
+			primaryModel->compute(ctx, fluencePrimary);
+			extraModel->compute(ctx, fluenceExtra);
+			dualModel.compute(ctx, fluenceTotal);
+
+			headmodel::io::writePGM_U8(tag, fluenceTotal, false, 0.0f, 1.0f);
+			headmodel::io::writeProfileCSV_Multi(tag+"profile.csv", fluencePrimary, fluenceExtra, fluenceTotal, 0);
 			std::cout << "Written " << tag ;
 		};
 
 		std::cout << "Beginning Run ...\n";
 
-		runCase(200.0, "fluence_ex2_20x20");
 		runCase(100.0, "fluence_ex2_10x10");
-		runCase(20.0, "fluence_ex2_2x2");
 		runCase(10.0, "fluence_ex2_1x1");
-		runCase(5.0, "fluence_ex2_0.5x0.5");
 
         return 0;
     } catch (const std::exception& e) {

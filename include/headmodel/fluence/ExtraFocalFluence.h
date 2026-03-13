@@ -4,6 +4,7 @@
 #include "headmodel/fluence/FluenceModel.h"
 #include "headmodel/fluence/FiniteSourceFluence.h"
 #include "headmodel/source/SourceSampler2D.h"
+#include "headmodel/collimation/JawTransmissionModel.h"
 
 namespace headmodel::fluence
 {
@@ -19,8 +20,10 @@ public:
 
 	explicit ExtraFocalFluence(
 			std::shared_ptr<headmodel::source::SourceSampler2D> sampler,
+			headmodel::collimation::JawTransmissionModel txModel,
 			Settings s = Settings()
-			): m_impl(std::move(sampler), s);
+			)
+	: m_impl(std::move(sampler), std::move(txModel), s)
 			{}
 
 	void compute(const FluenceContext& ctx, headmodel::grid::Grid2D<float>& out) const override
