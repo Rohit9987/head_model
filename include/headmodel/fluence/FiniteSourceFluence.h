@@ -11,8 +11,6 @@
 
 namespace headmodel::fluence
 {
-
-
 // Exercise 1: geometric penumbra via finite focal spot sampling.
 // For each pixel, average "visible through jaws?" over N source samples.
 
@@ -27,8 +25,17 @@ public:
             : numSamplesPerPixel(n), rngSeed(seed) {}
     };
 
-	FiniteSourceFluence(std::shared_ptr<headmodel::source::SourceSampler2D> sampler, headmodel::collimation::JawTransmissionModel txModel, Settings s = Settings()):
-			m_sampler(std::move(sampler)), m_s(s), m_txModel(std::move(txModel)) {}
+	FiniteSourceFluence(std::shared_ptr<headmodel::source::SourceSampler2D> sampler, 
+						headmodel::geom::Vec3 sourceCenter,
+						headmodel::collimation::JawTransmissionModel txModel, 
+						Settings s = Settings()):
+				
+		m_sampler(std::move(sampler)), 
+		m_sourceCenter(sourceCenter),
+		m_s(s), 
+		m_txModel(std::move(txModel)) 
+		
+		{}
 
 	
 	void compute(const FluenceContext& ctx, headmodel::grid::Grid2D<float>& out) const override
@@ -41,11 +48,11 @@ public:
 		if(m_s.numSamplesPerPixel <=0)
 			throw std::runtime_error("FiniteSourceFluence: numSamplesPerPixel must be >0");
 
-
+		int numSamplesPerPixel = m_s.numSamplesPerPixel;
 		const double zJaw = ctx.geom.jawPlaneZ;
 		const double zF = ctx.geom.fluencePlaneZ;
 
-		const Vec3 S0 = ctx.geom.source;	// nominal source center
+		const Vec3 S0 = m_sourceCenter; //ctx.geom.source;	// nominal source center
 
 		// RNG: we want deterministic, but also avoid identical noise patterns per pixel
 		// We'll hash pixel index into the seed
@@ -65,7 +72,7 @@ public:
 
 				// Ex2 change:
 				// We now count how many sampled source points were actually visible (not occluded)/
-				int validSourceSamples = 0;
+				//int validSourceSamples = 0;
 
 				// Exercise 3
 				double sumW = 0.0;
@@ -82,7 +89,7 @@ public:
 					if(!isSourcePointVisibleThroughJaws(S0, Sk, ctx))
 						continue;
 
-					++validSourceSamples;
+					//++validSourceSamples;
 
 					// Ray S->P intersects jaw plane?
 					const double denom = (P.z - Sk.z);
@@ -102,12 +109,15 @@ public:
 					if(ctx.jawsAtJawPlane.contains(Q.x, Q.y))
 						++ visibleCount;
 				}
+				/*
 			if(validSourceSamples > 0)
 				{
 					out(i,j) = static_cast<float>(sumW / static_cast<float>(validSourceSamples));
 				}
 			else
 				out(i,j) = 0.0f;
+				*/
+				out(i,j) =  sumW / numSamplesPerPixel;
 			}
 		}
 	}
@@ -140,6 +150,7 @@ private:
 	}
 
 	std::shared_ptr<headmodel::source::SourceSampler2D> m_sampler;
+	headmodel::geom::Vec3 m_sourceCenter;
 	Settings m_s;
 	headmodel::collimation::JawTransmissionModel m_txModel;
 };

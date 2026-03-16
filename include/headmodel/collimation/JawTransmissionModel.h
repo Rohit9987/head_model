@@ -13,10 +13,10 @@ class JawTransmissionModel
 public:
 	struct Params
 	{
-		double T_leak = 0.015;	// 1.5% leakage as a starting point
+		double T_leak = 0.003;	// 0.3% leakage as a starting point	 1.5 % is for MLC, can be modelled later into MLC
 		double k_mm = 1.0;		// edge falloff scale (mm)
 
-		Params(double T = 0.015, double k = 1.0): T_leak(T), k_mm(k) {}
+		Params(double T = 0.003, double k = 1.0): T_leak(T), k_mm(k) {}
 	};
 
     explicit JawTransmissionModel(Params p = Params()) : m_p(p) {
