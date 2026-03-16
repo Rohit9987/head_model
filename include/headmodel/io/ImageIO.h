@@ -136,7 +136,7 @@ inline void writeCSV_XY_Multi(
             const double x = primary.xCenter(i);
 
             const float p = primary(i,j);
-            const float e = extra(i,j);
+            const float e = extra(i,j)/10.0;
             const float t = total(i,j);
             const float frac = (t > 1e-8f) ? (e / t) : 0.0f;
 

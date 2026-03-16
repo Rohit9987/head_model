@@ -98,9 +98,12 @@ int main(int argc, char** argv)
 
 		//headmodel::fluence::FiniteSourceFluence model(sampler, tx, s);
 		//model.compute(ctx, fluence);
-		auto primaryModel = std::make_shared<headmodel::fluence::FiniteSourceFluence>(sampler, tx, s);
+		headmodel::geom::Vec3 source(0,0, -1000);
+		headmodel::geom::Vec3 extraSource(0,0, -900);
+		
+		auto primaryModel = std::make_shared<headmodel::fluence::FiniteSourceFluence>(sampler, source, tx, s);
 		auto extraModel = std::make_shared<headmodel::fluence::FiniteSourceFluence>(
-				extraSampler, tx, s);
+				extraSampler, extraSource, tx, s);
 
 		headmodel::fluence::DualSourceFluenceModel dualModel(
 			primaryModel, extraModel, headmodel::fluence::DualSourceFluenceModel::Params());
@@ -138,5 +141,6 @@ int main(int argc, char** argv)
         std::cerr << "ERROR: " << e.what() << "\n";
         return 1;
     }
+
 }
 
