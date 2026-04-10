@@ -89,6 +89,7 @@ int main(int argc, char** argv)
 		headmodel::fluence::FiniteSourceFluence::Settings s;
 		s.numSamplesPerPixel = 512;
 		s.rngSeed = 12345;
+		s.offaxis = true;
 
 		headmodel::collimation::JawTransmissionModel::Params p;
 		p.T_leak = 0.003; //	leakage through jaw%
@@ -102,6 +103,8 @@ int main(int argc, char** argv)
 		headmodel::geom::Vec3 extraSource(0,0, -900);
 		
 		auto primaryModel = std::make_shared<headmodel::fluence::FiniteSourceFluence>(sampler, source, tx, s);
+
+		s.offaxis=false;
 		auto extraModel = std::make_shared<headmodel::fluence::FiniteSourceFluence>(
 				extraSampler, extraSource, tx, s);
 
@@ -133,8 +136,11 @@ int main(int argc, char** argv)
 
 		std::cout << "Beginning Run ...\n";
 
+		runCase(400.0, "fluence_ex2_40x40");
+		runCase(300.0, "fluence_ex2_30x30");
+		runCase(200.0, "fluence_ex2_20x20");
 		runCase(100.0, "fluence_ex2_10x10");
-		runCase(10.0, "fluence_ex2_1x1");
+		//runCase(10.0, "fluence_ex2_1x1");
 
         return 0;
     } catch (const std::exception& e) {

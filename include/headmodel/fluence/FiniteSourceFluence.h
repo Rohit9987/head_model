@@ -8,6 +8,7 @@
 #include "headmodel/source/SourceSampler2D.h"
 #include "headmodel/geom/Vec3.h"
 #include "headmodel/collimation/JawTransmissionModel.h"
+#include "headmodel/fluence/offaxis.h"
 
 namespace headmodel::fluence
 {
@@ -20,9 +21,10 @@ public:
     struct Settings {
         int numSamplesPerPixel;
         uint32_t rngSeed;
+		bool offaxis;
 
         Settings(int n = 256, uint32_t seed = 12345)
-            : numSamplesPerPixel(n), rngSeed(seed) {}
+            : numSamplesPerPixel(n), rngSeed(seed), offaxis(false) {}
     };
 
 	FiniteSourceFluence(std::shared_ptr<headmodel::source::SourceSampler2D> sampler, 
@@ -118,6 +120,19 @@ public:
 				out(i,j) = 0.0f;
 				*/
 				out(i,j) =  sumW / numSamplesPerPixel;
+
+				// off axis factor
+				if(m_s.offaxis)
+				{
+				double r_mm = std::sqrt(xF*xF + yF*yF);
+				double r_cm = r_mm / 10.0;
+
+				double f = oafFactor(r_cm);
+
+				out(i,j) *= f;
+				}
+
+
 			}
 		}
 	}
