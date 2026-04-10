@@ -1,7 +1,7 @@
-# Head Model – Photon Beam Fluence and Dose Engine
+# Head Model – Photon Beam Fluence
 
 ## Overview
-**Head Model** is a research and educational project aimed at developing a simplified photon beam model and dose calculation engine for external beam radiotherapy. The goal is to gradually build a transparent and modular implementation of the main components used in treatment planning system (TPS) dose engines, starting from beam fluence modeling and progressing toward dose calculation in a water phantom.
+**Head Model** is a research and educational project aimed at developing a simplified photon beam model (and dose calculation engine) for external beam radiotherapy. The goal is to gradually build a transparent and modular implementation of the main components used in treatment planning system (TPS) dose engines, starting from beam fluence modeling and progressing toward dose calculation in a water phantom.
 
 The project is implemented primarily in **C++**, with a focus on clarity of physics concepts, modular design, and extensibility for future development. It is intended as a learning platform for exploring beam modeling techniques used in modern radiotherapy dose algorithms.
 
@@ -11,8 +11,6 @@ The main objectives of the project are:
 - Develop a **dual-source photon beam fluence model** consisting of:
   - a primary photon source representing the target
   - an extra-focal source representing head scatter (e.g. flattening filter scatter)
-
-- Implement **detector’s-eye-view (DEV) style ray tracing** to compute fluence through the treatment head geometry.
 
 - Model **jaw transmission and beam collimation** effects.
 
@@ -34,17 +32,6 @@ At the current stage, the project includes:
 - Separation of primary and extra-focal fluence contributions
 - Output of fluence maps and profiles for analysis
 
-## Planned Development
-The following steps are planned for future development:
-
-1. Refined extra-focal source modeling based on accelerator head geometry.
-2. Implementation of off-axis fluence factor and spectral softening.
-3. Ray-traced TERMA calculation within a water phantom.
-4. Simple water scatter / dose transport model.
-5. Validation against measured beam data (profiles, PDD, output factors).
-6. Implementation of multi-leaf collimator (MLC) geometry.
-7. Development toward a collapsed cone convolution dose engine.
-
 ## Repository Structure
 The code is organized into several modules:
 
@@ -54,6 +41,33 @@ The code is organized into several modules:
 - **collimation** – jaw aperture and transmission models  
 - **fluence** – beam fluence calculation models  
 - **io** – utilities for exporting images and profiles  
+
+## Results (Fluence Validation)
+
+Comparison between:
+- **Measured data (Sun Nuclear Profiler)**
+- **Head Model output**
+
+### 10 × 10 cm² Field
+
+![10x10 Profile](Results/profile_10x10.png)
+
+---
+
+### 20 × 20 cm² Field
+
+![20x20 Profile](Results/Profile_20x20.png)
+
+---
+
+### Observations
+- Good agreement in:
+  - field flatness
+  - penumbra width
+  - shoulder behaviour
+- Extra-focal Gaussian successfully reproduces:
+  - out-of-field tails
+- Off-axis factor improves large-field agreement
 
 ## Intended Use
 This project is intended for:
