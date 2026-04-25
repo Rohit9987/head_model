@@ -19,3 +19,10 @@ else()
     target_compile_options(headmodel_demo PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+
+# Headmodel library
+add_library(HeadModel src/main.cc)
+target_include_directories(HeadModel PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+target_compile_features(HeadModel PUBLIC cxx_std_17)
