@@ -50,13 +50,13 @@ Comparison between:
 
 ### 10 × 10 cm² Field
 
-![10x10 Profile](Results/profile_10x10.png)
+![10x10 Profile](Results/profile_10x10_updated_numbers.png)
 
 ---
 
 ### 20 × 20 cm² Field
 
-![20x20 Profile](Results/Profile_20x20.png)
+![20x20 Profile](Results/profile_20x20_updated_numbers.png)
 
 ---
 
