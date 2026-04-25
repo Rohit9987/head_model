@@ -25,7 +25,13 @@ int main(int argc, char** argv)
 		const double SAD_mm = 1000.0;		// source to iso
 		const double zIso_mm = 0.0;			// define isocentre plane at z=0
 		const double zSource_mm = -SAD_mm;	// source on negative z axis
-		const double zJaw_mm = -500.0;		// effective jaw plane (example)	TODO: varian specs
+		const double zJaw_mm = -595.0;		// effective jaw plane (x-plane)	TODO: varian specs
+
+		/*
+		const double xJaw_mm = -633.9 + 78.0/2;		 
+		const double yJaw_mm = -72.11 + 77.7/2;
+		const double mlc_mm  = -533.0 + 56.1/2; 
+		*/
 
 
 		// Fluence grid at isocentre: 40x40 cm at 1 mm resolution
