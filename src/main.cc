@@ -1,158 +1,49 @@
 #include <iostream>
+#include <vector>
 #include <string>
-#include <memory>
 
-#include "headmodel/grid/Grid2D.h"
-#include "headmodel/geom/Vec3.h"
-#include "headmodel/collimation/JawAperture.h"
-#include "headmodel/fluence/FluenceContext.h"
-#include "headmodel/fluence/IdealPrimaryFluence.h"
+#include "headmodel/HeadModel.h"
+#include "headmodel/HeadModelConfig.h"
 #include "headmodel/io/ImageIO.h"
 
-#include "headmodel/source/GaussianSourceSampler2D.h"
-#include "headmodel/fluence/FiniteSourceFluence.h"
-#include "headmodel/fluence/DualSourceFluenceModel.h"
-#include "headmodel/fluence/ExtraFocalFluence.h"
-
-int main(int argc, char** argv)
+int main()
 {
-	try
-	{
-		// ----------------------------
-        // User-tweakable parameters
-        // ----------------------------
+    try
+    {
+        headmodel::HeadModelConfig config;
 
-		const double SAD_mm = 1000.0;		// source to iso
-		const double zIso_mm = 0.0;			// define isocentre plane at z=0
-		const double zSource_mm = -SAD_mm;	// source on negative z axis
-		const double zJaw_mm = -595.0;		// effective jaw plane (x-plane)	TODO: varian specs
+        headmodel::HeadModel model(config);
 
-		/*
-		const double xJaw_mm = -633.9 + 78.0/2;		 
-		const double yJaw_mm = -72.11 + 77.7/2;
-		const double mlc_mm  = -533.0 + 56.1/2; 
-		*/
+        const std::vector<double> fieldSizes_mm = {
+             200.0, 100.0
+        };
 
+        for (double fieldSize : fieldSizes_mm)
+        {
+            auto result = model.computeOpenField(fieldSize);
 
-		// Fluence grid at isocentre: 40x40 cm at 1 mm resolution
-		const int nx = 401;
-		const int ny = 401;
-		const double dx_mm = 1.0;
-		const double dy_mm = 1.0;
+            std::string tag =
+                "fluence_ex2_" + std::to_string(static_cast<int>(fieldSize / 10.0)) + "x" +
+                std::to_string(static_cast<int>(fieldSize / 10.0));
 
+            headmodel::io::writePGM_U8(tag, result.total, false, 0.0f, 1.0f);
 
-		// Lower-left corner so that center is near(0,0)
-		const double x0_mm = -0.5 * nx * dx_mm;
-		const double y0_mm = -0.5 * ny * dy_mm;
+            headmodel::io::writeProfileCSV_Multi(
+                tag + "_profile.csv",
+                result.primary,
+                result.extra,
+                result.total,
+                0
+            );
 
-		// Jaw-defined field size "at isocentre": 100mm x 100mm (10x10 cm)
-		// BUT: jaws are defined at the jaw plane. For Exercise 0 we will set the
-        // jaw opening at the jaw plane to create a 10x10 cm field at isocentre
-        // assuming straight-line geometry from point source.
-		const double fieldSizeIso_mm = 100.0;	// 1 cm
-		const double halfIso = 0.5 * fieldSizeIso_mm;
-
-		// Similar triangles: halfJaw = halfIso * (distance source->jaw/distance source->iso)
-		const double dSJ = (zJaw_mm - zSource_mm);
-		const double dSI = (zIso_mm - zSource_mm);
-		const double halfJaw = halfIso * (dSJ / dSI);
-
-	    // Output filenames (optional argument base name)
-        std::string base = (argc > 1) ? argv[1] : std::string("fluence0");
-        const std::string pgmPath  = base + ".pgm";
-        const std::string csvPath  = base + ".csv";
-        const std::string profPath = base + "_profile_y0.csv";
-
-
-        // ----------------------------
-        // Build context
-        // ----------------------------
-		headmodel::fluence::FluenceContext ctx;
-		ctx.geom.source = headmodel::geom::Vec3{0.0, 0.0, zSource_mm};
-		ctx.geom.jawPlaneZ = zJaw_mm;
-		ctx.geom.fluencePlaneZ = zIso_mm;
-
-		ctx.jawsAtJawPlane.xMin = -halfJaw;
-		ctx.jawsAtJawPlane.xMax = +halfJaw;
-        ctx.jawsAtJawPlane.yMin = -halfJaw;
-        ctx.jawsAtJawPlane.yMax = +halfJaw;
-
-        // ----------------------------
-        // Allocate grid and compute
-        // ----------------------------
-		headmodel::grid::Grid2D<float> fluenceTotal(nx, ny, dx_mm, dy_mm, x0_mm, y0_mm);
-		headmodel::grid::Grid2D<float> fluenceExtra(nx, ny, dx_mm, dy_mm, x0_mm, y0_mm);
-		headmodel::grid::Grid2D<float> fluencePrimary(nx, ny, dx_mm, dy_mm, x0_mm, y0_mm);
-
-		fluencePrimary.fill(0.0f);
-		fluenceExtra.fill(0.0f);
-		fluenceTotal.fill(0.0f);
-
-
-		//headmodel::fluence::IdealPrimaryFluence model;
-		auto sampler = std::make_shared<headmodel::source::GaussianSourceSampler2D>(/*sigma_mm=*/0.3);
-		auto extraSampler = std::make_shared<headmodel::source::GaussianSourceSampler2D>(15.0);
-		headmodel::fluence::FiniteSourceFluence::Settings s;
-		s.numSamplesPerPixel = 512;
-		s.rngSeed = 12345;
-		s.offaxis = true;
-
-		headmodel::collimation::JawTransmissionModel::Params p;
-		p.T_leak = 0.003; //	leakage through jaw%
-		p.k_mm = 1.0;
-		headmodel::collimation::JawTransmissionModel tx(p);
-
-
-		//headmodel::fluence::FiniteSourceFluence model(sampler, tx, s);
-		//model.compute(ctx, fluence);
-		headmodel::geom::Vec3 source(0,0, -1000);
-		headmodel::geom::Vec3 extraSource(0,0, -900);
-		
-		auto primaryModel = std::make_shared<headmodel::fluence::FiniteSourceFluence>(sampler, source, tx, s);
-
-		s.offaxis=false;
-		auto extraModel = std::make_shared<headmodel::fluence::FiniteSourceFluence>(
-				extraSampler, extraSource, tx, s);
-
-		headmodel::fluence::DualSourceFluenceModel dualModel(
-			primaryModel, extraModel, headmodel::fluence::DualSourceFluenceModel::Params());
-
-		auto runCase = [&](double fieldSizeIso_mm, const std::string& tag)
-		{
-			const double halfIso = 0.5 * fieldSizeIso_mm;
-
-			const double dSJ = (zJaw_mm - zSource_mm);
-			const double dSI = (zIso_mm - zSource_mm);
-			const double halfJaw = halfIso * (dSJ / dSI);
-
-			ctx.jawsAtJawPlane = {-halfJaw, +halfJaw, -halfJaw, +halfJaw};
-
-			fluenceTotal.fill(0.0f);
-			fluenceExtra.fill(0.0f);
-			fluencePrimary.fill(0.0f);
-
-			primaryModel->compute(ctx, fluencePrimary);
-			extraModel->compute(ctx, fluenceExtra);
-			dualModel.compute(ctx, fluenceTotal);
-
-			headmodel::io::writePGM_U8(tag, fluenceTotal, false, 0.0f, 1.0f);
-			headmodel::io::writeProfileCSV_Multi(tag+"profile.csv", fluencePrimary, fluenceExtra, fluenceTotal, 0);
-			std::cout << "Written " << tag ;
-		};
-
-		std::cout << "Beginning Run ...\n";
-
-		runCase(400.0, "fluence_ex2_40x40");
-		runCase(300.0, "fluence_ex2_30x30");
-		runCase(200.0, "fluence_ex2_20x20");
-		runCase(100.0, "fluence_ex2_10x10");
-		//runCase(10.0, "fluence_ex2_1x1");
+            std::cout << "Written " << tag << "\n";
+        }
 
         return 0;
-    } catch (const std::exception& e) {
+    }
+    catch (const std::exception& e)
+    {
         std::cerr << "ERROR: " << e.what() << "\n";
         return 1;
     }
-
 }
-

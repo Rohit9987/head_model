@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <cmath>
 
 #include "headmodel/grid/Grid2D.h"
 
