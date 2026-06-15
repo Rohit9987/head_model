@@ -1,5 +1,6 @@
 #include "headmodel/HeadModel.h"
 
+#include <iterator>
 #include <memory>
 #include <stdexcept>
 
@@ -135,5 +136,100 @@ FluenceResult HeadModel::computeField(
 
     return result;
 }
+
+double HeadModel::inverseSquareRelativeToIso(
+		const headmodel::geom::Vec3& source,
+		const headmodel::geom::Vec3& point,
+		double zIso_mm) const
+{
+	const auto isoPoint = intersectRayWithZPlane(source, point, zIso_mm);
+
+	const double d2Iso = distanceSquared(source, isoPoint);
+	const double d2Point = distanceSquared(source, point);
+
+	if(d2Point <= 0.0)
+		return 0.0;
+
+	return d2Iso/d2Point;
+}
+
+
+headmodel::geom::Vec3 HeadModel::intersectRayWithZPlane(
+		const headmodel::geom::Vec3& source, 
+		const headmodel::geom::Vec3& point,
+		double zPlane_mm) const
+{
+	const double dz = point.z - source.z;
+
+	if(std::abs(dz) < 1e-12)
+		throw std::runtime_error("intersectRayWithZPlane: ray parallel to z-plane");
+
+	const double t = (zPlane_mm - source.z) / dz;
+
+	return
+	{
+		source.x + t * (point.x - source.x),
+		source.y + t * (point.y - source.y),
+		zPlane_mm
+	};
+}
+
+
+FluencePointResult HeadModel::computeOpenFieldAtPoint(
+			const FluenceResult& isoFluence,
+			const geom::Vec3& point_mm) const
+{
+
+	const geom::Vec3 primarySource{
+		0.0,
+		0.0,
+		config_.zSource_mm
+	};
+
+	const geom::Vec3 extraSource{
+		0.0,
+		0.0, 
+		config_.extraSourceZ_mm
+	};
+
+	const double zIso = config_.zIso_mm;
+
+	// Do not evalueate points upstream of either source.
+	if(point_mm.z <= primarySource.z || point_mm.z <= extraSource.z)
+		return {};
+
+	const geom::Vec3 primaryIsoPoint = 
+		intersectRayWithZPlane(primarySource, point_mm, zIso);
+
+	const geom::Vec3 extraIsoPoint = 
+		intersectRayWithZPlane(extraSource, point_mm, zIso);
+
+	const double primaryInvSq =
+		inverseSquareRelativeToIso(primarySource, point_mm, zIso);
+
+
+    const double extraInvSq =
+        inverseSquareRelativeToIso(extraSource, point_mm, zIso);
+
+    const double primaryIso =
+        isoFluence.primary.sampleBilinear(
+            primaryIsoPoint.x,
+            primaryIsoPoint.y
+        );
+
+    const double extraIso =
+        isoFluence.extra.sampleBilinear(
+            extraIsoPoint.x,
+            extraIsoPoint.y
+        );
+
+    FluencePointResult out;
+    out.primary = primaryIso * primaryInvSq;
+    out.extra = extraIso * extraInvSq;
+    out.total = out.w_primary * out.primary + out.w_extra * out.extra;
+
+	return out;
+}
+
 
 } // namespace headmodel
