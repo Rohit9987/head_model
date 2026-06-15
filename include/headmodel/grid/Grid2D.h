@@ -28,6 +28,52 @@ public:
 
     void fill(const T& v){ std::fill(m_data.begin(), m_data.end(), v); }
 
+	T sampleBilinear(double x_mm, double y_mm) const
+	{
+		const double fx = (x_mm - m_x0) / m_dx;
+		const double fy = (y_mm - m_y0) / m_dy;
+
+		const int ix0 = static_cast<int>(std::floor(fx));
+		const int iy0 = static_cast<int>(std::floor(fy));
+
+		const int ix1 = ix0 + 1;
+		const int iy1 = iy0 + 1;
+
+		if (ix0 < 0 || iy0 < 0 ||
+			ix1 >= m_nx ||
+			iy1 >= m_ny)
+		{
+			return T{};
+		}
+
+		const double tx = fx - static_cast<double>(ix0);
+		const double ty = fy - static_cast<double>(iy0);
+
+		const double v00 = static_cast<double>(at(ix0, iy0));
+		const double v10 = static_cast<double>(at(ix1, iy0));
+		const double v01 = static_cast<double>(at(ix0, iy1));
+		const double v11 = static_cast<double>(at(ix1, iy1));
+
+		const double v0 = (1.0 - tx) * v00 + tx * v10;
+		const double v1 = (1.0 - tx) * v01 + tx * v11;
+
+		return static_cast<T>((1.0 - ty) * v0 + ty * v1);
+	}
+
+	T& at(int ix, int iy)
+	{
+		return m_data[static_cast<std::size_t>(iy * m_nx + ix)];
+	}
+
+	const T& at(int ix, int iy) const
+	{
+		return m_data[static_cast<std::size_t>(iy * m_nx + ix)];
+	}
+
+	double x0() const { return m_x0; }
+	double y0() const { return m_y0; }
+
+
 private:
     int m_nx{}, m_ny{};
     double m_dx{}, m_dy{};
