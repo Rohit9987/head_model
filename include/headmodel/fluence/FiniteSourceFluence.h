@@ -10,6 +10,10 @@
 #include "headmodel/collimation/JawTransmissionModel.h"
 #include "headmodel/fluence/offaxis.h"
 
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 namespace headmodel::fluence
 {
 // Exercise 1: geometric penumbra via finite focal spot sampling.
@@ -58,6 +62,8 @@ public:
 
 		// RNG: we want deterministic, but also avoid identical noise patterns per pixel
 		// We'll hash pixel index into the seed
+		
+		#pragma omp parallel for collapse(2) schedule(static)
 		for(int j = 0; j < out.ny(); ++j)
 		{
 			for(int i = 0; i < out.nx(); ++i)
